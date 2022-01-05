@@ -94,6 +94,10 @@
             try {
                 contractData = JSON.parse($('#contractDataInput').value);
 
+                if (contractData.config_pubkey) {
+                    contractData.config_public_key = contractData.config_pubkey;
+                }
+
                 const walletPubKeyBN = await tonweb.provider.call2(toAddress, 'get_public_key');
                 const walletPubKeyHex = walletPubKeyBN.toString(16);
 
