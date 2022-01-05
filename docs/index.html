@@ -118,7 +118,7 @@
             }
 
             const amount = Number($('#amountInput').value);
-            if (isNaN(amount) || !(amount > 1)) {
+            if (isNaN(amount) || !(amount >= 1)) {
                 alert('Invalid Amount');
                 return;
             }
