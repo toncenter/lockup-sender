@@ -10,17 +10,17 @@
 <div class="h">Lockup Sender</div>
 
 <div>
-    Recipient Address:
+    Recipient’s address:
 </div>
 <div>
     <input id="toAddressInput" type="text">
 </div>
 
 <div>
-    Recipient Contract Data:
+    Recipient’s contract config:
 </div>
 <div>
-    <input id="contractDataInput" type="text" placeholder="Paste JSON here">
+    <input id="contractDataInput" type="text" placeholder="Paste JSON config here">
 </div>
 
 <div>
@@ -28,8 +28,8 @@
 </div>
 <div>
     <select id="modeSelect">
-        <option value="restrict">Restrict - can spent on whitelist before the date</option>
-        <option value="lockup">Lockup - can not be spent before the date</option>
+        <option value="restrict">Restricted: can send to allowed address before the date</option>
+        <option value="lockup">Locked: cannot be spent before the date</option>
     </select>
 </div>
 
@@ -41,20 +41,20 @@
 </div>
 
 <div>
-    Unlock Date for this Amount:
+    Unlock date for this amount:
 </div>
 <div>
     <input id="dateInput" type="datetime-local">
 </div>
 
 <div>
-    <button id="button" class="button">Send Lockup'ed Toncoins</button>
+    <button id="button" class="button">Send locked Toncoins</button>
 </div>
 
 <div style="color: #aaa; margin-top: 20px; line-height: 150%">
-    By pressing the button, the recipient will be checked.<br>
-    If the recipient is not a lockup wallet or doesn't match contract data, nothing will happen.<br>
-    If the recipient is a valid lockup wallet, new coins will be sent in accordance with the entered data.
+    By pressing the button, the recipient’s contract will be verified.<br>
+    If the recipient is not a lockup wallet or doesn't match the config data, nothing will happen.<br>
+    If the recipient is a valid lockup wallet, coins will be sent in accordance with the entered data.
 </div>
 
 <script type="text/javascript" src="libs/tonkeeper-tonweb-lockup.js"></script>
