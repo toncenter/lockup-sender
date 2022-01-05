@@ -24,6 +24,16 @@
 </div>
 
 <div>
+    Mode:
+</div>
+<div>
+    <select id="modeSelect">
+        <option value="lockup">Lockup</option>
+        <option value="restrict">Restrict</option>
+    </select>
+</div>
+
+<div>
     Amount:
 </div>
 <div>
@@ -60,6 +70,19 @@
         const tonweb = new TonWeb();
 
         $('#button').addEventListener('click', async () => {
+            let isLockup;
+            switch ($('#modeSelect').value) {
+                case 'lockup':
+                    isLockup = true;
+                    break;
+                case 'restrict':
+                    isLockup = false;
+                    break;
+                default:
+                    throw new Error('invalid mode');
+            }
+            console.log({isLockup});
+
             const toAddress = $('#toAddressInput').value;
             if (!toAddress || !TonWeb.utils.Address.isValid(toAddress)) {
                 alert('Invalid Recipient Address');
@@ -118,7 +141,7 @@
 
                 const bodyBits = new TonWeb.boc.BitString(32 + 1 + 32);
                 bodyBits.writeUint(0x373aa9f4, 32); // cmd
-                bodyBits.writeUint(1, 1); // only_restrict
+                bodyBits.writeUint(isLockup ? 0 : 1, 1); // only_restrict
                 bodyBits.writeUint(date, 32); // ts (timestamp)
 
                 const bodyHex = TonWeb.utils.bytesToHex(bodyBits.array);

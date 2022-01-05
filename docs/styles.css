@@ -37,7 +37,7 @@ a, a:hover, a:active, a:focus {
     color: #1d98dc;
 }
 
-input {
+input, select {
     line-height: 36px;
     width: 100%;
     max-width: 500px;
