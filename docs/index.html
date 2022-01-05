@@ -57,6 +57,10 @@
     If the recipient is a valid lockup wallet, coins will be sent in accordance with the entered data.
 </div>
 
+<div style="color: #aaa; margin-top: 20px; line-height: 150%">
+    v0.9
+</div>
+
 <script type="text/javascript" src="libs/tonkeeper-tonweb-lockup.js"></script>
 
 <script>
@@ -143,26 +147,27 @@
                     throw new Error('Sender Address does not match the Contract Data');
                 }
 
-                const bodyBits = new TonWeb.boc.BitString(32 + 1 + 32);
-                bodyBits.writeUint(0x373aa9f4, 32); // cmd
-                bodyBits.writeUint(isLockup ? 0 : 1, 1); // only_restrict
-                bodyBits.writeUint(date, 32); // ts (timestamp)
+                const body = new TonWeb.boc.Cell();
+                body.bits.writeUint(0x373aa9f4, 32); // cmd
+                body.bits.writeUint(isLockup ? 0 : 1, 1); // only_restrict
+                body.bits.writeUint(date, 32); // ts (timestamp)
 
-                const bodyHex = TonWeb.utils.bytesToHex(bodyBits.array);
+                const hash = await body.hash();
+                const hashHex = TonWeb.utils.bytesToHex(hash);
                 const signatureHex = await provider.send(
                     'ton_rawSign',
                     [{
-                        data: bodyHex
+                        data: hashHex
                     }]
                 );
                 console.log('signature is ' + signatureHex);
                 const signature = TonWeb.utils.hexToBytes(signatureHex);
                 if (signature.length !== 512 / 8) throw new Error('invalid signature length');
 
-                const bits = new TonWeb.boc.BitString(32 + 512 + 32 + 8 + 32);
+                const bits = new TonWeb.boc.BitString(32 + 512 + 32 + 1 + 32);
                 bits.writeUint(0x82eaf9c4, 32); // op
                 bits.writeBytes(signature);
-                bits.writeBytes(bodyBits.array);
+                bits.writeBitString(body.bits);
 
                 provider.send(
                     'ton_sendTransaction',
