@@ -127,7 +127,7 @@
                 return;
             }
 
-            const date = new Date($('#dateInput').value).getTime() / 1000;
+            const date = Math.floor(new Date($('#dateInput').value).getTime() / 1000);
             if (isNaN(date) || !date) {
                 alert('Invalid Date');
                 return;
