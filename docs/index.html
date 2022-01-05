@@ -58,7 +58,7 @@
 </div>
 
 <div style="color: #aaa; margin-top: 20px; line-height: 150%">
-    v0.9
+    v0.98
 </div>
 
 <script type="text/javascript" src="libs/tonkeeper-tonweb-lockup.js"></script>
@@ -164,18 +164,18 @@
                 const signature = TonWeb.utils.hexToBytes(signatureHex);
                 if (signature.length !== 512 / 8) throw new Error('invalid signature length');
 
-                const bits = new TonWeb.boc.BitString(32 + 512 + 32 + 1 + 32);
-                bits.writeUint(0x82eaf9c4, 32); // op
-                bits.writeBytes(signature);
-                bits.writeBitString(body.bits);
+                const cell = new TonWeb.boc.Cell();
+                cell.bits.writeUint(0x82eaf9c4, 32); // op
+                cell.bits.writeBytes(signature);
+                cell.bits.writeBitString(body.bits);
 
                 provider.send(
                     'ton_sendTransaction',
                     [{
                         to: toAddress,
                         value: TonWeb.utils.toNano(amount).toString(),
-                        data: TonWeb.utils.bytesToHex(bits.array),
-                        dataType: 'hex'
+                        data: TonWeb.utils.bytesToBase64(await cell.toBoc()),
+                        dataType: 'boc'
                     }]
                 );
 
