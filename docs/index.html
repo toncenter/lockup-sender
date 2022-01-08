@@ -107,7 +107,7 @@
 
                 const WalletClass = tonweb.lockupWallet[contractData.wallet_type];
                 wallet = new WalletClass(tonweb.provider, {
-                    wc: 0,
+                    wc: -1,
                     publicKey: TonWeb.utils.hexToBytes(walletPubKeyHex),
                     config: contractData
                 });
