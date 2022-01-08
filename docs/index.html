@@ -58,7 +58,7 @@
 </div>
 
 <div style="color: #aaa; margin-top: 20px; line-height: 150%">
-    v1.01
+    v1.03
 </div>
 
 <script type="text/javascript" src="libs/tonkeeper-tonweb-lockup.js"></script>
@@ -66,12 +66,16 @@
 <script>
     const $ = (selectors) => document.querySelector(selectors);
 
+    const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
+
     const provider = window.ton;
 
     if (!provider) {
         alert('TON Wallet Plugin not installed');
     } else {
-        const tonweb = new TonWeb();
+        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
+        const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+        this.ton = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
 
         $('#button').addEventListener('click', async () => {
             let isLockup;
