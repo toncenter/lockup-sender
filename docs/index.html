@@ -102,12 +102,16 @@
                     contractData.config_public_key = contractData.config_pubkey;
                 }
 
+                if (contractData.workchain === undefined) {
+                    throw new Error('No workchain in Contract Data');
+                }
+
                 const walletPubKeyBN = await tonweb.provider.call2(toAddress, 'get_public_key');
                 const walletPubKeyHex = walletPubKeyBN.toString(16);
 
                 const WalletClass = tonweb.lockupWallet[contractData.wallet_type];
                 wallet = new WalletClass(tonweb.provider, {
-                    wc: -1,
+                    wc: contractData.workchain,
                     publicKey: TonWeb.utils.hexToBytes(walletPubKeyHex),
                     config: contractData
                 });
