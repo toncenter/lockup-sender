@@ -58,10 +58,10 @@
 </div>
 
 <div style="color: #aaa; margin-top: 20px; line-height: 150%">
-    v1.05
+    v1.06
 </div>
 
-<script type="text/javascript" src="libs/tonkeeper-tonweb-lockup.js"></script>
+<script type="text/javascript" src="libs/tonweb-0.0.29.js"></script>
 
 <script>
     const $ = (selectors) => document.querySelector(selectors);
@@ -75,7 +75,7 @@
     } else {
         const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
         const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
-        const tonweb = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc));
+        const tonweb = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: '4c710dd263139cedf55eb3182d7e14ef4148b4fca2450fe398fa300c6911bdde'}));
 
         $('#button').addEventListener('click', async () => {
             let isLockup;
@@ -113,7 +113,7 @@
                 const walletPubKeyBN = await tonweb.provider.call2(toAddress, 'get_public_key');
                 const walletPubKeyHex = walletPubKeyBN.toString(16);
 
-                const WalletClass = tonweb.lockupWallet[contractData.wallet_type];
+                const WalletClass = tonweb.lockupWallet.all[contractData.wallet_type];
                 wallet = new WalletClass(tonweb.provider, {
                     wc: contractData.workchain,
                     publicKey: TonWeb.utils.hexToBytes(walletPubKeyHex),
