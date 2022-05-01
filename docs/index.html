@@ -58,7 +58,7 @@
 </div>
 
 <div style="color: #aaa; margin-top: 20px; line-height: 150%">
-    v1.07
+    v1.08
 </div>
 
 <script type="text/javascript" src="libs/tonweb-0.0.29.js"></script>
@@ -111,7 +111,10 @@
                 }
 
                 const walletPubKeyBN = await tonweb.provider.call2(toAddress, 'get_public_key');
-                const walletPubKeyHex = walletPubKeyBN.toString(16);
+                let walletPubKeyHex = walletPubKeyBN.toString(16);
+                if (walletPubKeyHex.length % 2 !== 0) {
+                    walletPubKeyHex = '0' + walletPubKeyHex;
+                }
 
                 const WalletClass = tonweb.lockupWallet.all[contractData.wallet_type];
                 wallet = new WalletClass(tonweb.provider, {
@@ -149,7 +152,10 @@
                 const account = accounts[0];
 
                 const senderPubKeyBN = await tonweb.provider.call2(account, 'get_public_key');
-                const senderPubKeyHex = senderPubKeyBN.toString(16);
+                let senderPubKeyHex = senderPubKeyBN.toString(16);
+                if (senderPubKeyHex.length % 2 !== 0) {
+                    senderPubKeyHex = '0' + senderPubKeyHex;
+                }
                 console.log({senderPubKeyHex});
 
                 if (contractData.config_public_key !== TonWeb.utils.bytesToBase64(TonWeb.utils.hexToBytes(senderPubKeyHex))) {
