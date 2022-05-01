@@ -58,7 +58,7 @@
 </div>
 
 <div style="color: #aaa; margin-top: 20px; line-height: 150%">
-    v1.06
+    v1.07
 </div>
 
 <script type="text/javascript" src="libs/tonweb-0.0.29.js"></script>
@@ -125,6 +125,7 @@
                     throw new Error('Recipient Address does not match the Contract Data');
                 }
             } catch (e) {
+                console.error(e);
                 alert(e.message);
                 return;
             }
