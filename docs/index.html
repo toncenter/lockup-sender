@@ -58,152 +58,178 @@
 </div>
 
 <div style="color: #aaa; margin-top: 20px; line-height: 150%">
-    v1.08
+    v1.09
 </div>
 
-<script type="text/javascript" src="libs/tonweb-0.0.29.js"></script>
+<script type="text/javascript" src="libs/tonweb-0.0.54.js"></script>
 
 <script>
     const $ = (selectors) => document.querySelector(selectors);
 
     const IS_TESTNET = window.location.href.indexOf('testnet') > -1;
+    const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
+    const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
+    const tonweb = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: '4c710dd263139cedf55eb3182d7e14ef4148b4fca2450fe398fa300c6911bdde'}));
 
-    const provider = window.ton;
 
-    if (!provider) {
-        alert('TON Wallet Plugin not installed');
-    } else {
-        const mainnetRpc = 'https://toncenter.com/api/v2/jsonRPC';
-        const testnetRpc = 'https://testnet.toncenter.com/api/v2/jsonRPC';
-        const tonweb = new TonWeb(new TonWeb.HttpProvider(IS_TESTNET ? testnetRpc : mainnetRpc, {apiKey: '4c710dd263139cedf55eb3182d7e14ef4148b4fca2450fe398fa300c6911bdde'}));
+    $('#button').addEventListener('click', async () => {
+        const provider = window.ton;
 
-        $('#button').addEventListener('click', async () => {
-            let isLockup;
-            switch ($('#modeSelect').value) {
-                case 'lockup':
-                    isLockup = true;
-                    break;
-                case 'restrict':
-                    isLockup = false;
-                    break;
-                default:
-                    throw new Error('invalid mode');
+        if (!provider) {
+            alert('TON Wallet Plugin not installed');
+            return;
+        }
+
+        let isLockup;
+        switch ($('#modeSelect').value) {
+            case 'lockup':
+                isLockup = true;
+                break;
+            case 'restrict':
+                isLockup = false;
+                break;
+            default:
+                throw new Error('invalid mode');
+        }
+        console.log({isLockup});
+
+        const toAddress = $('#toAddressInput').value;
+        if (!toAddress || !TonWeb.utils.Address.isValid(toAddress)) {
+            alert('Invalid recipient address format');
+            return;
+        }
+        try {
+            let toInfo = await tonweb.provider.getAddressInfo(toAddress);
+            if (toInfo.state === "uninitialized") {
+                throw new Error(`Destination lockup wallet not deployed. Please deploy lockup wallet in Tonkeeper first`);
             }
-            console.log({isLockup});
+            if (toInfo.state !== "active") {
+                throw new Error(`Destination in ${toInfo.state} state. Check that you are sending to the right address and on the right network.`);
+            }
+            const lockupV1 = "te6cckECHgEAAmEAART/APSkE/S88sgLAQIBIAIDAgFIBAUB8vKDCNcYINMf0x/TH4AkA/gjuxPy8vADgCJRqboa8vSAI1G3uhvy9IAfC/kBVBDF+RAa8vT4AFBX+CPwBlCY+CPwBiBxKJMg10qOi9MHMdRRG9s8ErAB6DCSKaDfcvsCBpMg10qW0wfUAvsA6NEDpEdoFBVDMPAE7VQdAgLNBgcCASATFAIBIAgJAgEgDxACASAKCwAtXtRNDTH9Mf0//T//QE+gD0BPoA9ATRgD9wB0NMDAXGwkl8D4PpAMCHHAJJfA+AB0x8hwQKSXwTg8ANRtPABghCC6vnEUrC9sJJfDOCAKIIQgur5xBu6GvL0gCErghA7msoAvvL0B4MI1xiAICH5AVQQNvkQEvL00x+AKYIQNzqp9BO6EvL00wDTHzAB4w8QSBA3XjKAMDQ4AEwh10n0qG+lbDGAADBA5SArwBQAWEDdBCvAFCBBXUFYAEBAkQwDwBO1UAgEgERIARUjh4igCD0lm+lIJMwI7uRMeIgmDX6ANEToUATkmwh4rPmMIADUCMjKHxfKHxXL/xPL//QAAfoC9AAB+gL0AMmAAQxRIqBTE4Ag9A5voZb6ANEToAKRMOLIUAP6AkATgCD0QwGACASAVFgAVven3gBiCQvhHgAwCASAXGAIBSBscAC21GH4AbYiGioJgngDGIH4Axj8E7eILMAIBWBkaABetznaiaGmfmOuF/8AAF6x49qJoaY+Y64WPwAARsyX7UTQ1wsfgABex0b4I4IBCMPtQ9iAAKAHQ0wMBeLCSW3/g+kAx+kAwAfABqA7apA==";
+            if (toInfo.code !== lockupV1) {
+                throw new Error(`Destination address is not lockup wallet`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert(e.message);
+            return;
+        }
 
-            const toAddress = $('#toAddressInput').value;
-            if (!toAddress || !TonWeb.utils.Address.isValid(toAddress)) {
-                alert('Invalid Recipient Address');
-                return;
+        let contractData;
+        let wallet;
+        try {
+            contractData = JSON.parse($('#contractDataInput').value);
+
+            if (contractData.config_pubkey) {
+                contractData.config_public_key = contractData.config_pubkey;
             }
 
-            let contractData;
-            let wallet;
+            if (contractData.workchain === undefined) {
+                throw new Error('No workchain in Contract Data');
+            }
+
+            const walletPubKeyBN = await tonweb.provider.call2(toAddress, 'get_public_key');
+            let walletPubKeyHex = walletPubKeyBN.toString(16);
+            if (walletPubKeyHex.length % 2 !== 0) {
+                walletPubKeyHex = '0' + walletPubKeyHex;
+            }
+
+            const WalletClass = tonweb.lockupWallet.all[contractData.wallet_type];
+            wallet = new WalletClass(tonweb.provider, {
+                wc: contractData.workchain,
+                publicKey: TonWeb.utils.hexToBytes(walletPubKeyHex),
+                config: contractData
+            });
+            const address = await wallet.getAddress();
+
+            if (toAddress !== address.toString(true, true, true, false)) {
+                throw new Error('Recipient Address does not match the Contract Data');
+            }
+        } catch (e) {
+            console.error(e);
+            alert(e.message);
+            return;
+        }
+
+        const amountString = $('#amountInput').value;
+        const amount = Number(amountString);
+        if (isNaN(amount) || !(amount >= 1)) {
+            alert('Invalid Amount');
+            return;
+        }
+
+        const date = Math.floor(new Date($('#dateInput').value).getTime() / 1000);
+        if (isNaN(date) || !date) {
+            alert('Invalid Date');
+            return;
+        }
+
+        console.log(toAddress, wallet, amountString, amount, date);
+
+        try {
+            const accounts = await provider.send('ton_requestAccounts');
+            const account = accounts[0];
+            let senderPubKeyBN;
             try {
-                contractData = JSON.parse($('#contractDataInput').value);
-
-                if (contractData.config_pubkey) {
-                    contractData.config_public_key = contractData.config_pubkey;
-                }
-
-                if (contractData.workchain === undefined) {
-                    throw new Error('No workchain in Contract Data');
-                }
-
-                const walletPubKeyBN = await tonweb.provider.call2(toAddress, 'get_public_key');
-                let walletPubKeyHex = walletPubKeyBN.toString(16);
-                if (walletPubKeyHex.length % 2 !== 0) {
-                    walletPubKeyHex = '0' + walletPubKeyHex;
-                }
-
-                const WalletClass = tonweb.lockupWallet.all[contractData.wallet_type];
-                wallet = new WalletClass(tonweb.provider, {
-                    wc: contractData.workchain,
-                    publicKey: TonWeb.utils.hexToBytes(walletPubKeyHex),
-                    config: contractData
-                });
-                const address = await wallet.getAddress();
-
-                if (toAddress !== address.toString(true, true, true, false)) {
-                    throw new Error('Recipient Address does not match the Contract Data');
-                }
+                senderPubKeyBN = await tonweb.provider.call2(account, 'get_public_key');
             } catch (e) {
                 console.error(e);
-                alert(e.message);
-                return;
-            }
-
-            const amount = Number($('#amountInput').value);
-            if (isNaN(amount) || !(amount >= 1)) {
-                alert('Invalid Amount');
-                return;
-            }
-
-            const date = Math.floor(new Date($('#dateInput').value).getTime() / 1000);
-            if (isNaN(date) || !date) {
-                alert('Invalid Date');
-                return;
-            }
-
-            console.log(toAddress, wallet, amount, date);
-
-            try {
-                const accounts = await provider.send('ton_requestAccounts');
-                const account = accounts[0];
-
-                const senderPubKeyBN = await tonweb.provider.call2(account, 'get_public_key');
-                let senderPubKeyHex = senderPubKeyBN.toString(16);
-                if (senderPubKeyHex.length % 2 !== 0) {
-                    senderPubKeyHex = '0' + senderPubKeyHex;
+                if (e.result && e.result.exit_code === 32) {
+                    alert('The sender\'s wallet must be deployed and must be v3R2 or v4R2 version');
+                } else {
+                    alert(e.message);
                 }
-                console.log({senderPubKeyHex});
-
-                if (contractData.config_public_key !== TonWeb.utils.bytesToBase64(TonWeb.utils.hexToBytes(senderPubKeyHex))) {
-                    throw new Error('Sender Address does not match the Contract Data');
-                }
-
-                const body = new TonWeb.boc.Cell();
-                body.bits.writeUint(0x373aa9f4, 32); // cmd
-                body.bits.writeUint(isLockup ? 0 : 1, 1); // only_restrict
-                body.bits.writeUint(date, 32); // ts (timestamp)
-
-                const hash = await body.hash();
-                const hashHex = TonWeb.utils.bytesToHex(hash);
-                const signatureHex = await provider.send(
-                    'ton_rawSign',
-                    [{
-                        data: hashHex
-                    }]
-                );
-                console.log('signature is ' + signatureHex);
-                const signature = TonWeb.utils.hexToBytes(signatureHex);
-                if (signature.length !== 512 / 8) throw new Error('invalid signature length');
-
-                const cell = new TonWeb.boc.Cell();
-                cell.bits.writeUint(0x82eaf9c4, 32); // op
-                cell.bits.writeBytes(signature);
-                cell.bits.writeBitString(body.bits);
-
-                provider.send(
-                    'ton_sendTransaction',
-                    [{
-                        to: toAddress,
-                        value: TonWeb.utils.toNano(amount).toString(),
-                        data: TonWeb.utils.bytesToBase64(await cell.toBoc()),
-                        dataType: 'boc'
-                    }]
-                );
-
-            } catch (error) {
-                // User denied or Error
-                console.error(error);
-                alert(error.message);
+                return;
             }
-        });
+            let senderPubKeyHex = senderPubKeyBN.toString(16);
+            if (senderPubKeyHex.length % 2 !== 0) {
+                senderPubKeyHex = '0' + senderPubKeyHex;
+            }
+            console.log({senderPubKeyHex});
 
-        provider.on('accountsChanged', function (accounts) {
-        });
-    }
+            if (contractData.config_public_key !== TonWeb.utils.bytesToBase64(TonWeb.utils.hexToBytes(senderPubKeyHex))) {
+                throw new Error('Sender Address does not match the Contract Data');
+            }
+
+            const body = new TonWeb.boc.Cell();
+            body.bits.writeUint(0x373aa9f4, 32); // cmd
+            body.bits.writeUint(isLockup ? 0 : 1, 1); // only_restrict
+            body.bits.writeUint(date, 32); // ts (timestamp)
+
+            const hash = await body.hash();
+            const hashHex = TonWeb.utils.bytesToHex(hash);
+            const signatureHex = await provider.send(
+                'ton_rawSign',
+                [{
+                    data: hashHex
+                }]
+            );
+            console.log('signature is ' + signatureHex);
+            const signature = TonWeb.utils.hexToBytes(signatureHex);
+            if (signature.length !== 512 / 8) throw new Error('invalid signature length');
+
+            const cell = new TonWeb.boc.Cell();
+            cell.bits.writeUint(0x82eaf9c4, 32); // op
+            cell.bits.writeBytes(signature);
+            cell.bits.writeBitString(body.bits);
+
+            provider.send(
+                'ton_sendTransaction',
+                [{
+                    to: toAddress,
+                    value: TonWeb.utils.toNano(amountString).toString(),
+                    data: TonWeb.utils.bytesToBase64(await cell.toBoc()),
+                    dataType: 'boc'
+                }]
+            );
+
+        } catch (error) {
+            // User denied or Error
+            console.error(error);
+            alert(error.message);
+        }
+    });
 </script>
 </body>
 </html>
